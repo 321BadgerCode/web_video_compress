@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+	<title>Video Compressor 🎥</title>
+	<style>
+	body {
+		margin: 0;
+		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+		background-color: #121212;
+		color: #e0e0e0;
+		line-height: 1.6;
+		padding: 2rem;
+	}
+
+	h1 {
+		color: #ffffff;
+		font-size: 2rem;
+		margin-bottom: 1rem;
+	}
+
+	p {
+		margin: 0.3rem 0;
+	}
+
+	form {
+		margin: 1.5rem 0;
+		background-color: #1e1e1e;
+		padding: 1rem;
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		box-shadow: 0 0 10px rgba(0,0,0,0.5);
+	}
+
+	label {
+		font-size: 0.95rem;
+		color: #ccc;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	input[type="checkbox"] {
+		accent-color: #03dac6;
+		transform: scale(1.2);
+	}
+
+	button {
+		background-color: #03dac6;
+		color: #000;
+		border: none;
+		padding: 0.6rem 1rem;
+		border-radius: 5px;
+		cursor: pointer;
+		font-weight: bold;
+		transition: background 0.3s ease;
+	}
+
+	button:hover {
+		background-color: #00bfa5;
+	}
+
+	.grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.5rem;
+		justify-content: center;
+		margin-top: 2rem;
+	}
+
+	.video-card {
+		background-color: #1e1e1e;
+		border: 1px solid #2c2c2c;
+		border-radius: 10px;
+		padding: 1rem;
+		width: 220px;
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+		transition: transform 0.2s ease;
+	}
+
+	.video-card:hover {
+		transform: translateY(-5px);
+	}
+
+	.video-card img {
+		width: 100%;
+		border-radius: 6px;
+		margin-bottom: 0.8rem;
+	}
+
+	.video-card p {
+		font-size: 0.9rem;
+		color: #bbb;
+	}
+
+	.video-card strong {
+		color: #ffffff;
+		font-size: 1rem;
+	}
+	</style>
+</head>
+<body>
+	<h1>Video Folder Summary</h1>
+	<p>Total size: {{ total_size // (1024 * 1024) }} MB</p>
+	<p>Videos found: {{ videos|length }}</p>
+	<form method="post" action="/compress" id="compressForm">
+		<label><input type="checkbox" name="recursive" id="recursive"> Include Subfolders</label>
+		<button type="submit">Compress All Videos</button>
+	</form>
+	<div class="grid">
+		{% for video in videos %}
+		<div class="video-card">
+			<img src="{{ url_for('static', filename=video.thumbnail[7:]) }}" alt="Thumbnail">
+			<strong>{{ video.filename[:20] }}{% if video.filename|length > 20 %}...{% endif %}</strong>
+			<p>Duration: {{ video.duration }}</p>
+			<p>Size: {{ video.size // (1024 * 1024) }} MB</p>
+			<p>Status: {{ 'Compressed' if video.compressed else 'Pending' }}</p>
+		</div>
+		{% endfor %}
+	</div>
+	<script>
+		document.getElementById("compressForm").addEventListener("submit", function(e) {
+			e.preventDefault();
+			const formData = new FormData(this);
+			fetch("/compress", {
+				method: "POST",
+				body: formData
+			}).then(res => res.json()).then(data => {
+				alert("Compression complete!");
+				location.reload();
+			});
+		});
+
+		document.getElementById("recursive").addEventListener("change", function() {
+			fetch("/set_recursive", {
+				method: "POST",
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ recursive: this.checked })
+			});
+		});
+	</script>
+</body>
+</html>
