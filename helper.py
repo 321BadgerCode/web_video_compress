@@ -85,7 +85,7 @@ def compress_video(path):
 		cmd = [
 			"ffmpeg", "-i", path,
 			"-vcodec", h265_encoder,
-			"-preset", "ultrafast",
+			"-preset", "fast",
 			"-crf", str(int(51 * (compression_quality / 100))),
 			output_path, "-y"
 		]

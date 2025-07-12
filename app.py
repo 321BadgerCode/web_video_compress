@@ -6,7 +6,7 @@ from helper import VIDEO_DIR
 
 app = Flask(__name__)
 
-VID_FILETYPES = ('.mp4', '.mkv', '.avi', '.mov', '.webm')
+VID_FILETYPES = ('.mp4', '.mkv', '.avi', '.mov', '.webm', 'vob', 'wmv', 'flv')
 
 recursive = False
 
