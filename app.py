@@ -6,11 +6,11 @@ from helper import VIDEO_DIR
 
 app = Flask(__name__)
 
-VID_FILETYPES = ('.mp4', '.mkv', '.avi', '.mov', '.webm', 'vob', 'wmv', 'flv')
+VID_FILETYPES = (".mp4", ".mkv", ".avi", ".mov", ".webm", "vob", "wmv", "flv", "mpg")
 
 recursive = False
 
-@app.route('/set_recursive', methods=['POST'])
+@app.route("/set_recursive", methods=["POST"])
 def set_recursive():
 	global recursive
 	data = request.get_json()
@@ -29,16 +29,16 @@ def index():
 				rel_path = os.path.relpath(path, VIDEO_DIR)
 				info = helper.get_video_info(path)
 				if info:
-					info['rel_path'] = rel_path
-					info['compressed'] = helper.compressed_cache.get(rel_path, {}).get("compressed", False)
+					info["rel_path"] = rel_path
+					info["compressed"] = helper.compressed_cache.get(rel_path, {}).get("compressed", False)
 					videos.append(info)
-					total_size += info['size']
+					total_size += info["size"]
 		if not recursive:
 			break
 
 	return render_template("index.html", videos=videos, total_size=total_size)
 
-@app.route('/compress', methods=['POST'])
+@app.route("/compress", methods=["POST"])
 def compress():
 	for root, dirs, files in os.walk(VIDEO_DIR):
 		for file in files:
@@ -53,12 +53,12 @@ def compress():
 
 	return jsonify(status="done")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 	# Get arguments
 	parser = argparse.ArgumentParser(description="Video Compression Tool")
-	parser.add_argument('--no-gpu', action='store_true', help="Don't use GPU for compression")
-	parser.add_argument('--cq', type=int, default=helper.compression_quality, help="Compression quality (0-100)")
-	parser.add_argument('--no-overwrite', action='store_true', help="Don't overwrite original files with compressed files")
+	parser.add_argument("--no-gpu", action="store_true", help="Don't use GPU for compression")
+	parser.add_argument("--cq", type=int, default=helper.compression_quality, help="Compression quality (0-100)")
+	parser.add_argument("--no-overwrite", action="store_true", help="Don't overwrite original files with compressed files")
 	args = parser.parse_args()
 	if args.cq < 0 or args.cq > 100:
 		raise ValueError("Compression quality must be between 0 and 100")
