@@ -1,7 +1,6 @@
 import os
 import time
 import subprocess
-import cv2
 import json
 import torch
 
@@ -37,40 +36,33 @@ def detect_h265_encoder():
 	return GPU_H265_ENCODER_MAP["default"]
 
 def get_video_info(path):
-	try:
-		cap = cv2.VideoCapture(path)
-		if not cap.isOpened():
-			return None
-		frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-		fps = cap.get(cv2.CAP_PROP_FPS)
-		duration = frames / fps if fps else 0
-		cap.release()
-
-		size = os.path.getsize(path)
-		thumbnail_path = generate_thumbnail(path)
-		return {
-			"filename": os.path.basename(path),
-			"duration": f"{int(duration // 60)}:{int(duration % 60):02}",
-			"thumbnail": thumbnail_path,
-			"size": size
-		}
-	except Exception as e:
-		print("Error:", e)
-		return None
+	cmd = [
+		"ffprobe", "-v", "error",
+		"-select_streams", "v:0",
+		"-show_entries", "format=duration:stream=nb_frames,r_frame_rate",
+		"-of", "json", path
+	]
+	result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+	info = json.loads(result.stdout)
+	duration = float(info["format"]["duration"])
+	size = os.path.getsize(path)
+	thumbnail = generate_thumbnail(path)
+	return {
+		"filename": os.path.basename(path),
+		"duration": f"{int(duration // 60)}:{int(duration % 60):02}",
+		"size": size,
+		"thumbnail": thumbnail
+	}
 
 def generate_thumbnail(path):
 	thumb_name = os.path.basename(path) + ".jpg"
 	thumb_path = os.path.join("static", "thumbnails", thumb_name)
-	if os.path.exists(thumb_path):
-		return thumb_path
-	cap = cv2.VideoCapture(path)
-	duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
-	thumb_time = duration * 0.1
-	cap.set(cv2.CAP_PROP_POS_MSEC, thumb_time * 1000)
-	success, frame = cap.read()
-	if success:
-		cv2.imwrite(thumb_path, frame)
-	cap.release()
+	if not os.path.exists(thumb_path):
+		subprocess.run([
+			"ffmpeg", "-i", path,
+			"-vf", "thumbnail,scale=320:-1",
+			"-frames:v", "1", thumb_path, "-y"
+		])
 	return thumb_path
 
 def save_cache(compressed_cache):
@@ -84,7 +76,8 @@ def compress_video(path):
 	if h265_encoder == "libx265":
 		cmd = [
 			"ffmpeg", "-i", path,
-			"-vcodec", h265_encoder,
+			"-c:a", "copy",
+			"-c:v", h265_encoder,
 			"-preset", "fast",
 			"-crf", str(int(51 * (compression_quality / 100))),
 			output_path, "-y"
@@ -92,9 +85,9 @@ def compress_video(path):
 	else:
 		cmd = [
 			"ffmpeg", "-i", path,
-			"-vcodec", h265_encoder,
-			"-preset", "llhp",
-			"-b:v", "0",
+			"-c:a", "copy",
+			"-c:v", h265_encoder,
+			"-preset", "p1",
 			"-cq", str(int(63 * (compression_quality / 100))),
 			output_path, "-y"
 		]
