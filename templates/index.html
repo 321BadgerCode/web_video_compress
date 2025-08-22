@@ -160,7 +160,7 @@
 					lastRate = data.rate;
 					videoAmt = data.video_amt;
 					document.getElementById("progressPercent").innerText = (data.progress * 100).toFixed(2) + "% at " + lastRate.toFixed(2) + " MB/s";
-					if (progressBar.clientWidth < (data.progress * 100)) {
+					if (parseFloat(progressBar.style.width) < (data.progress * 100)) {
 						progressBar.style.width = (data.progress * 100) + "%";
 					}
 				});
