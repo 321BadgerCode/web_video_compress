@@ -1,7 +1,3 @@
 - Calculate approximation of when compressing will end (calculate ms per mb of compression for first n number of files and assume linear rate)
-- Show loading bar
-- Optimize render webpage (takes long time when refresh to render all files)
-  - Don't delete static thumbnails if not done compressing (takes longer to load)
-  - Automatically change render of isCompressed value right after compressed on backend
 - Change cache names depending on subfolders, but leave main cache.json (to not mess up actual caching), so users can store locally
-- Take away "compressed" attribute in JSON cache because just need to check if in cache, not compressed attribute
+- Use ffprobe to see if video is h265 and has compression percent. If so, assume it's compressed or compress only the difference to get to compression quality.

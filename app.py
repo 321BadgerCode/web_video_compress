@@ -1,4 +1,5 @@
 import os
+import time
 import argparse
 from flask import Flask, render_template, request, jsonify
 import helper
@@ -9,6 +10,10 @@ app = Flask(__name__)
 VID_FILETYPES = (".mp4", ".mkv", ".avi", ".mov", ".webm", "vob", "wmv", "flv", "mpg")
 
 recursive = False
+videos = []
+progress = 0
+rate = 0
+start_time = 0
 
 @app.route("/set_recursive", methods=["POST"])
 def set_recursive():
@@ -19,6 +24,7 @@ def set_recursive():
 
 @app.route('/')
 def index():
+	global videos
 	videos = []
 	total_size = 0
 
@@ -30,7 +36,7 @@ def index():
 				info = helper.get_video_info(path)
 				if info:
 					info["rel_path"] = rel_path
-					info["compressed"] = helper.compressed_cache.get(rel_path, {}).get("compressed", False)
+					info["compressed"] = helper.compressed_cache.get(rel_path, False)
 					videos.append(info)
 					total_size += info["size"]
 		if not recursive:
@@ -40,18 +46,36 @@ def index():
 
 @app.route("/compress", methods=["POST"])
 def compress():
-	for root, dirs, files in os.walk(VIDEO_DIR):
-		for file in files:
-			if file.lower().endswith(VID_FILETYPES):
-				path = os.path.join(root, file)
-				rel_path = os.path.relpath(path, VIDEO_DIR)
-				if rel_path in helper.compressed_cache and helper.compressed_cache[rel_path]["compressed"]:
-					continue
-				helper.compress_video(path)
-		if not recursive:
-			break
+	global progress
+	global rate
+	global start_time
+
+	start_time = time.time()
+
+	for video in videos:
+		rel_path = video["rel_path"]
+		if video["compressed"]:
+			continue
+		helper.compress_video(os.path.join(VIDEO_DIR, rel_path))
+		progress = len(helper.compressed_cache) / len(videos)
 
 	return jsonify(status="done")
+
+@app.route("/get_progress", methods=["GET"])
+def get_progress():
+	global rate
+	global start_time
+
+	if not helper.compressed_cache:
+		video = videos[0]["rel_path"]
+		rel_path = video.split('.')[0] + "_compressed." + video.split('.')[-1]
+		size = os.path.getsize(os.path.join(VIDEO_DIR, rel_path)) // (1024 * 1024)
+		elapsed_time = time.time() - start_time
+		rate = size / elapsed_time if elapsed_time > 0 else 0
+	else:
+		last_video = list(helper.compressed_cache.keys())[-1]
+		rate = os.path.getsize(os.path.join(VIDEO_DIR, last_video)) // (1024 * 1024) / helper.compressed_cache[last_video]["compression_time"]
+	return jsonify(progress=progress, rate=rate, video_amt=len(videos))
 
 if __name__ == "__main__":
 	# Get arguments
@@ -68,7 +92,7 @@ if __name__ == "__main__":
 	helper.h265_encoder = helper.detect_h265_encoder()
 
 	# Clear out /static/thumbnails
-	if os.path.exists("static/thumbnails"):
+	if os.path.exists("static/thumbnails") and len(os.listdir("static/thumbnails")) == len(helper.compressed_cache):
 		for file in os.listdir("static/thumbnails"):
 			os.remove(os.path.join("static/thumbnails", file))
 	else:

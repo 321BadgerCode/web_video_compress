@@ -106,8 +106,14 @@
 	<p>Videos found: {{ videos|length }}</p>
 	<form method="post" action="/compress" id="compressForm">
 		<label><input type="checkbox" name="recursive" id="recursive"> Include Subfolders</label>
-		<button type="submit">Compress All Videos</button>
+		<button type="submit" onclick="startProgress()">Compress All Videos</button>
 	</form>
+	<div id="progressContainer">
+		<p>Compression Progress: <span id="progressPercent">0</span></p>
+		<div id="progressBar" style="width: 100%; background: #444;">
+			<div id="progress" style="width: 0; height: 20px; background: #03dac6;"></div>
+		</div>
+	</div>
 	<div class="grid">
 		{% for video in videos %}
 		<div class="video-card">
@@ -122,6 +128,7 @@
 	<script>
 		document.getElementById("compressForm").addEventListener("submit", function(e) {
 			e.preventDefault();
+
 			const formData = new FormData(this);
 			fetch("/compress", {
 				method: "POST",
@@ -141,6 +148,33 @@
 				body: JSON.stringify({ recursive: this.checked })
 			});
 		});
+
+		const progressBar = document.getElementById("progress");
+		let lastRate = 0;
+		let videoAmt = 1;
+
+		const updateProgressBar = () => {
+			fetch("/get_progress")
+				.then(res => res.json())
+				.then(data => {
+					lastRate = data.rate;
+					videoAmt = data.video_amt;
+					document.getElementById("progressPercent").innerText = (data.progress * 100).toFixed(2) + "% at " + lastRate.toFixed(2) + " MB/s";
+					if (progressBar.clientWidth < (data.progress * 100)) {
+						progressBar.style.width = (data.progress * 100) + "%";
+					}
+				});
+		};
+
+		// FIXME: The width often goes over 100%
+		const updateProgressBarWidth = () => {
+			document.getElementById("progress").style.width = (parseFloat(document.getElementById("progress").style.width) + (lastRate / videoAmt)) + "%";
+		};
+
+		const startProgress = () => {
+			setInterval(updateProgressBarWidth, 1000);
+			setInterval(updateProgressBar, 5000);
+		};
 	</script>
 </body>
 </html>

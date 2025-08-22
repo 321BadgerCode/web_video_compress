@@ -42,7 +42,7 @@ def get_video_info(path):
 		"-show_entries", "format=duration:stream=nb_frames,r_frame_rate",
 		"-of", "json", path
 	]
-	result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+	result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 	info = json.loads(result.stdout)
 	duration = float(info["format"]["duration"])
 	size = os.path.getsize(path)
@@ -62,7 +62,7 @@ def generate_thumbnail(path):
 			"ffmpeg", "-i", path,
 			"-vf", "thumbnail,scale=320:-1",
 			"-frames:v", "1", thumb_path, "-y"
-		])
+		], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	return thumb_path
 
 def save_cache(compressed_cache):
@@ -97,7 +97,6 @@ def compress_video(path):
 		elapsed_time = time.time() - start_time
 		compression_percent = (os.path.getsize(path) - os.path.getsize(output_path)) / os.path.getsize(path) * 100
 		compressed_cache[os.path.relpath(path, VIDEO_DIR)] = {
-			"compressed": True,
 			"compression_percent": compression_percent,
 			"compression_time": elapsed_time
 		}
