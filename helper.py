@@ -37,16 +37,16 @@ def detect_h265_encoder():
 
 def get_video_info(path):
 	cmd = [
-		"ffprobe", "-v", "error",
-		"-select_streams", "v:0",
-		"-show_entries", "format=duration:stream=nb_frames,r_frame_rate",
-		"-of", "json", path
+		"ffprobe",
+		"-v", "error",
+		"-show_entries", "format=duration",
+		"-of", "default=noprint_wrappers=1:nokey=1",
+		path
 	]
 	result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-	info = json.loads(result.stdout)
-	duration = float(info["format"]["duration"])
+	duration = float(result.stdout.strip())
 	size = os.path.getsize(path)
-	thumbnail = generate_thumbnail(path)
+	thumbnail = generate_thumbnail(path, duration / 10)
 	return {
 		"filename": os.path.basename(path),
 		"duration": f"{int(duration // 60)}:{int(duration % 60):02}",
@@ -54,14 +54,19 @@ def get_video_info(path):
 		"thumbnail": thumbnail
 	}
 
-def generate_thumbnail(path):
+def generate_thumbnail(path, timestamp):
 	thumb_name = os.path.basename(path) + ".jpg"
 	thumb_path = os.path.join("static", "thumbnails", thumb_name)
 	if not os.path.exists(thumb_path):
 		subprocess.run([
-			"ffmpeg", "-i", path,
+			"ffmpeg",
+			"-ss", str(timestamp),
+			"-i", path,
 			"-vf", "thumbnail,scale=320:-1",
-			"-frames:v", "1", thumb_path, "-y"
+			"-frames:v", "1",
+			"-q:v", "10",
+			"-y",
+			thumb_path
 		], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	return thumb_path
 

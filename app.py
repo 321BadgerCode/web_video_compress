@@ -92,9 +92,10 @@ if __name__ == "__main__":
 	helper.h265_encoder = helper.detect_h265_encoder()
 
 	# Clear out /static/thumbnails
-	if os.path.exists("static/thumbnails") and len(os.listdir("static/thumbnails")) == len(helper.compressed_cache):
-		for file in os.listdir("static/thumbnails"):
-			os.remove(os.path.join("static/thumbnails", file))
+	if os.path.exists("static/thumbnails"):
+		if helper.compressed_cache and len(os.listdir("static/thumbnails")) == len(helper.compressed_cache):
+			for file in os.listdir("static/thumbnails"):
+				os.remove(os.path.join("static/thumbnails", file))
 	else:
 		os.makedirs("static/thumbnails")
 
