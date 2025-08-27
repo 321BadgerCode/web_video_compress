@@ -7,7 +7,7 @@ from helper import VIDEO_DIR
 
 app = Flask(__name__)
 
-VID_FILETYPES = (".mp4", ".mkv", ".avi", ".mov", ".webm", "vob", "wmv", "flv", "mpg")
+VID_FILETYPES = (".mp4", ".mkv", ".avi", ".mov", ".webm", ".vob", ".wmv", ".flv", ".mpg")
 
 recursive = False
 videos = []
@@ -68,7 +68,7 @@ def get_progress():
 
 	if not helper.compressed_cache:
 		video = videos[0]["rel_path"]
-		rel_path = video.split('.')[0] + "_compressed." + video.split('.')[-1]
+		rel_path = video.rsplit('.', 1)[0] + "_compressed." + video.rsplit('.', 1)[-1]
 		size = os.path.getsize(os.path.join(VIDEO_DIR, rel_path)) // (1024 * 1024)
 		elapsed_time = time.time() - start_time
 		rate = size / elapsed_time if elapsed_time > 0 else 0
